@@ -11,11 +11,6 @@ const char* password = "pass";
 
 // Static IP Configuration
 WiFiClientSecure client;
-IPAddress local_IP(192, 168, 50, 44);
-IPAddress gateway(192, 168, 50, 1);
-IPAddress subnet(255, 255, 255, 0);
-IPAddress primaryDNS(8, 8, 8, 8);
-IPAddress secondaryDNS(8, 8, 4, 4);
 
 // Telegram Credentials
 #define BOT_TOKEN "token"
@@ -33,39 +28,49 @@ UniversalTelegramBot bot(BOT_TOKEN, client);
 
 void initWiFi() {
   if (WiFi.status() == WL_CONNECTED) {
-    return;
+      return;
   }
 
   digitalWrite(RED_PIN, HIGH);
   digitalWrite(GREEN_PIN, HIGH);
-  Serial.println("- Connecting to Home Router: " + String(ssid));
 
-  WiFi.mode(WIFI_STA);
-  if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS)) {
-    Serial.println("STA Failed to configure");
+  if (ssid != nullptr) {
+      Serial.print("- Connecting to Home Router: ");
+      Serial.println(ssid);
+  } else {
+      Serial.println("- SSID not set!");
+      return;
   }
 
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
+
   int attempt = 0;
   const int maxAttempts = 50;
 
   while (WiFi.status() != WL_CONNECTED && attempt < maxAttempts) {
-    delay(500);
-    attempt++;
-    if (attempt % 5 == 0) {
-      Serial.println("RSSI: " + String(WiFi.RSSI()) + " dBm");
-    }
+      delay(500);
+      attempt++;
+
+      if (attempt % 5 == 0) {
+          if (WiFi.status() == WL_CONNECTED) {
+              Serial.println("RSSI: " + String(WiFi.RSSI()) + " dBm");
+          } else {
+              Serial.println("Connecting...");
+          }
+      }
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\n- Successfully connected: " + WiFi.localIP());
-    digitalWrite(RED_PIN, LOW);
-    digitalWrite(GREEN_PIN, LOW);
+      Serial.println("\n- Successfully connected: " + WiFi.localIP().toString());
+      digitalWrite(RED_PIN, LOW);
+      digitalWrite(GREEN_PIN, LOW);
   } else {
-    Serial.println("\n- Connection Timeout. Restarting...");
-    digitalWrite(RED_PIN, LOW);
-    digitalWrite(GREEN_PIN, LOW);
-    ESP.restart();
+      Serial.println("\n- Connection Timeout. Restarting...");
+      digitalWrite(RED_PIN, LOW);
+      digitalWrite(GREEN_PIN, LOW);
+      delay(1000);
+      ESP.restart();
   }
 }
 
